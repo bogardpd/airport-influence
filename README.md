@@ -1,5 +1,40 @@
-# airport-influence
-Data processing tools for mapping small U.S. airports that only connect through a single hub airport
+# Airport Influence
+Data processing tools for mapping small U.S. airports that only connect through a single hub airport.
+
+<mark>NOTE: this project is still under development, and is not yet fully implemented as described.</mark>
+
+## Usage
+
+<code>airport_influence.py <em>airport_data_path</em> <em>emplanement_data_path</em> <em>output_gpkg_path</em></code>
+
+- `airport_data_path`: OurAirports airports.csv file (see [Data Sources](#data-sources) below)
+- `emplanement_data_path`: FAA emplanement spreadsheet (see [Data Sources](#data-sources) below)
+- `output_gpkg_path`: Location to export a GeoPackage file (see [Output](#output) below). A cache file will also be created at the same location with the same name but a .sqlite3 extension.
+
+## Output
+
+This script creates a [GeoPackage](https://www.geopackage.org/) file with two layer tables: `Airports` and `Routes`.
+
+### Airports (Point)
+
+The Airports layer contains airport features for labeling points on a map. Only airports associated with Routes (e.g. hub airports and the airports that singularly connect through them) are included in this layer table.
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| fid | Integer64 | Feature ID |
+| IATACode | String (3) | IATA code of the airport feature |
+| IsHub | Boolean | True if this feature is a hub airport, false if this is an airport that only connects through a single hub airport |
+| HubIATACode | String (3) | IATA code of the hub airport this airport feature connects through. If this feature *is* a hub airport, then its own IATA code should be used here. Used to allow styling categorization between different hubs and their influenced airports.
+
+### Routes (LineString)
+
+The Routes layer contains routes between hub airports and their singularly-connected airports, or route loops that singularly connect through a single hub. Only airports are vertices on these lines, so these routes are _not_ great circle routes.
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| fid | Integer64 | Feature ID |
+| Name | String | A string of IATA codes describing the route, separated by hyphens. If this is a single airport paired with a hub, the hub shall be listed first (i.e. `DEN-GCC`). If this route is a loop that only connects through a single hub, the hub shall be listed first and last (i.e. `DEN-DVL-JMS-DEN`). |
+| HubIATACode | String (3) | IATA code of the hub airport this route connects through. Used to allow styling categorization between routes influenced by each hub.
 
 ## Data Sources
 
