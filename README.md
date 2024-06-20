@@ -5,10 +5,10 @@ Data processing tools for mapping small U.S. airports that only connect through 
 
 ## Usage
 
-<code>airport_influence.py <em>airport_data_path</em> <em>emplanement_data_path</em> <em>output_gpkg_path</em></code>
+<code>airport_influence.py <em>airport_data_path</em> <em>enplanement_data_path</em> <em>output_gpkg_path</em></code>
 
 - `airport_data_path`: OurAirports airports.csv file (see [Data Sources](#data-sources) below)
-- `emplanement_data_path`: FAA emplanement spreadsheet (see [Data Sources](#data-sources) below)
+- `enplanement_data_path`: FAA enplanement spreadsheet (see [Data Sources](#data-sources) below)
 - `output_gpkg_path`: Location to export a GeoPackage file (see [Output](#output) below). A cache file will also be created at the same location with the same name but a .sqlite3 extension.
 
 ## Output
@@ -46,11 +46,11 @@ This script depends on several data sources which must be set up before running 
 
 Most airports data comes from the **airports.csv** file available at [https://ourairports.com/data/](https://ourairports.com/data/). This CSV file must be downloaded to the local computer, and its local path must be provided as the `airport_data_path` argument.
 
-#### FAA Emplanements Data
+#### FAA Enplanement Data
 
-FAA emplanements data is used for [airport categories](https://www.faa.gov/airports/planning_capacity/categories).
+FAA enplanement data is used for [airport categories](https://www.faa.gov/airports/planning_capacity/categories).
 
-Emplanement data spreadsheets can be downloaded from the FAA [Passenger Boarding &amp; All-Cargo Data](https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger) page. Select the most recent calendar year of **Emplanements at All Commercial Service Airports (by Rank)**, and download the **cy[YY]-commercial-service-emplanements.xlsx** file to the local computer, where [YY] is a two-digit year. This Excel file's local path must be provided as the `emplanement_data_path` argument.
+Enplanement data spreadsheets can be downloaded from the FAA [Passenger Boarding &amp; All-Cargo Data](https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger) page. Select the most recent calendar year of **Enplanements at All Commercial Service Airports (by Rank)**, and download the **cy[YY]-commercial-service-enplanements.xlsx** file to the local computer, where [YY] is a two-digit year. This Excel file's local path must be provided as the `enplanement_data_path` argument.
 
 ### API
 
