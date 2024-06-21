@@ -1,14 +1,56 @@
+"""
+Analyzes flight schedules to generate a GeoPackage of small airports
+which only connect to or through a single hub airport.
+"""
 import argparse
+import pandas as pd
 from pathlib import Path
+
 
 def airport_influence(
     airport_data_path: Path,
     enplanement_data_path: Path,
     output_gpkg_path: Path,
 ):
-    print(f"airport_data_path: {airport_data_path}")
-    print(f"enplanement_data_path: {enplanement_data_path}")
-    print(f"output_gpkg_path: {output_gpkg_path}")
+    airports = merge_airport_data(airport_data_path, enplanement_data_path)
+    print(airports)
+
+
+def merge_airport_data(
+    airport_data_path: Path,
+    enplanement_data_path: Path,
+) -> pd.DataFrame:
+    """
+    Merges FAA enplanement airport categories into airport data. 
+    """
+
+    # Load datasets:
+    airports = pd.read_csv(airport_data_path)
+    enplanements = pd.read_excel(enplanement_data_path, engine='openpyxl')
+    
+    # Filter datasets:
+    airports = airports[airports['iso_country'] == "US"]
+    enplanements = enplanements[enplanements['RO'].notnull()]
+    enplanements['Hub'] = enplanements['Hub'].fillna("NP") # Nonprimary nonhub
+    enplanements = enplanements[~enplanements['Hub'].str.contains("Count")]
+    
+    # Join datasets:
+    merged = enplanements.join(airports.set_index('local_code'), on='Locid')
+    print(merged.columns)
+
+    # Rename and select columns:
+    OUTPUT_COLS = {
+        'gps_code': "ICAOCode",
+        'iata_code': "IATACode",
+        'Locid': "FAALocID",
+        'name': "Name",
+        'hub': "Hub",
+        'latitude_deg': "Lat",
+        'longitude_deg': "Lon",
+    }
+    merged = merged.rename(columns=OUTPUT_COLS)[[*OUTPUT_COLS.values()]]
+
+    return merged
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
