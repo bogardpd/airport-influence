@@ -48,7 +48,10 @@ def merge_airport_data(
     # Filter datasets:
     airports = airports[airports['iso_country'] == "US"]
     enplanements = enplanements[enplanements['RO'].notnull()]
-    enplanements['Hub'] = enplanements.apply(lambda x: CATEGORIES[x['S/L']][x['Hub']], axis=1)
+    enplanements['Hub'] = enplanements.apply(
+        lambda x: CATEGORIES[x['S/L']][x['Hub']],
+        axis=1,
+    )
     
     # Join datasets:
     merged = enplanements.join(airports.set_index('local_code'), on='Locid')
