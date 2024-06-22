@@ -3,6 +3,7 @@ Analyzes flight schedules to generate a GeoPackage of small airports
 which only connect to or through a single hub airport.
 """
 import argparse
+import numpy as np
 import pandas as pd
 from pathlib import Path
 
@@ -23,20 +24,34 @@ def merge_airport_data(
     """
     Merges FAA enplanement airport categories into airport data. 
     """
+    CATEGORIES = {
+        'P': { # Primary
+            'L': "PL", # Large Hub
+            'M': "PM", # Medium Hub
+            'S': "PS", # Small Hub
+            'N': "PN", # Nonhub
+        },
+        'CS': { # Nonprimary Commercial Service
+            'None': "NN", # Nonhub
+        }
+    }
 
     # Load datasets:
     airports = pd.read_csv(airport_data_path)
-    enplanements = pd.read_excel(enplanement_data_path, engine='openpyxl')
+    enplanements = pd.read_excel(
+        enplanement_data_path,
+        engine='openpyxl',
+        keep_default_na=False,
+        na_values=[""], # Parse 'None' as string
+    )
     
     # Filter datasets:
     airports = airports[airports['iso_country'] == "US"]
     enplanements = enplanements[enplanements['RO'].notnull()]
-    enplanements['Hub'] = enplanements['Hub'].fillna("NP") # Nonprimary nonhub
-    enplanements = enplanements[~enplanements['Hub'].str.contains("Count")]
+    enplanements['Hub'] = enplanements.apply(lambda x: CATEGORIES[x['S/L']][x['Hub']], axis=1)
     
     # Join datasets:
     merged = enplanements.join(airports.set_index('local_code'), on='Locid')
-    print(merged.columns)
 
     # Rename and select columns:
     OUTPUT_COLS = {
