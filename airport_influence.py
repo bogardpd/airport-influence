@@ -86,6 +86,11 @@ def cache_airport_data(
     }
     merged = merged.rename(columns=OUTPUT_COLS)[[*OUTPUT_COLS.values()]]
 
+    # Set ICAO codes to None if they are not ICAO codes:
+    merged.loc[
+        (~merged['ICAOCode'].str.fullmatch(r'[A-Z]{4}', na=False)), 'ICAOCode'
+    ] = None
+
     # Write to cache:
     merged.to_sql('Airports', con, if_exists='append', index=False)
     con.commit()
