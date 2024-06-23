@@ -18,56 +18,12 @@ def airport_influence(
     if not force_overwrite:
         check_existing_files([output_gpkg_path])
     con = create_cache(cache_path)
-    airports = merge_airport_data(airport_data_path, enplanement_data_path)
-    print(airports)
+    cache_airport_data(con, airport_data_path, enplanement_data_path)
     con.close
 
 
-def check_existing_files(paths: list[Path]) -> None:
-    exists = [p for p in paths if p.exists()]
-    if len(exists) > 0:
-        print("The following file(s) already exist:")
-        for e in exists:
-            print(e)
-        response = input("Do you want to overwrite them? (y/N) ")
-        if response.upper() != "Y":
-            print("Exiting script without generating output.")
-            exit()
-
-
-def create_cache(cache_path: Path) -> sqlite3.Connection:
-    if cache_path.exists():
-        response = input("Cache already exists. Clear cache? (y/N)")
-        if response.upper() == "Y":
-            cache_path.unlink()
-            print("Cache cleared.")
-        else:
-            con = sqlite3.connect(cache_path)
-            return con
-    
-    con = sqlite3.connect(cache_path)
-    table_create_sql = [
-        """
-        CREATE TABLE IF NOT EXISTS Airports (
-            ID INT PRIMARY KEY,
-            ICAOCode TEXT,
-            IATACode TEXT,
-            FAALocID TEXT,
-            Name TEXT,
-            Hub TEXT,
-            Lat REAL,
-            Lon REAL
-        );
-        """,
-    ]
-    cur = con.cursor()
-    for statement in table_create_sql:
-        cur.execute(statement)
-    con.commit()
-    return con
-
-
-def merge_airport_data(
+def cache_airport_data(
+    con: sqlite3.Connection,
     airport_data_path: Path,
     enplanement_data_path: Path,
 ) -> pd.DataFrame:
@@ -85,6 +41,18 @@ def merge_airport_data(
             'None': "NN", # Nonhub
         }
     }
+    # ISO codes for US and its territories:
+    ISO_US_TER = ["US", "AS", "GU", "MP", "PR", "VI"]
+
+    cur = con.cursor()
+
+    # Check if airport table is already populated:
+    cur.execute("SELECT COUNT(ID) FROM Airports")
+    if cur.fetchone()[0] > 0:
+        print("Airport cache is already populated.")
+        return    
+
+    print("Caching airport data... ", end="")
 
     # Load datasets:
     airports = pd.read_csv(airport_data_path)
@@ -96,7 +64,7 @@ def merge_airport_data(
     )
     
     # Filter datasets:
-    airports = airports[airports['iso_country'] == "US"]
+    airports = airports[airports['iso_country'].isin(ISO_US_TER)]
     enplanements = enplanements[enplanements['RO'].notnull()]
     enplanements['Hub'] = enplanements.apply(
         lambda x: CATEGORIES[x['S/L']][x['Hub']],
@@ -118,7 +86,57 @@ def merge_airport_data(
     }
     merged = merged.rename(columns=OUTPUT_COLS)[[*OUTPUT_COLS.values()]]
 
-    return merged
+    # Write to cache:
+    merged.to_sql('Airports', con, if_exists='append', index=False)
+    con.commit()
+    print("done.")
+
+    return
+
+
+def check_existing_files(paths: list[Path]) -> None:
+    exists = [p for p in paths if p.exists()]
+    if len(exists) > 0:
+        print("The following file(s) already exist:")
+        for e in exists:
+            print(e)
+        response = input("Do you want to overwrite them? (y/N) ")
+        if response.upper() != "Y":
+            print("Exiting script without generating output.")
+            exit()
+
+
+def create_cache(cache_path: Path) -> sqlite3.Connection:
+    if cache_path.exists():
+        response = input("Cache already exists. Clear cache? (y/N) ")
+        if response.upper() == "Y":
+            cache_path.unlink()
+            print("Cache cleared.")
+        else:
+            con = sqlite3.connect(cache_path)
+            return con
+    
+    con = sqlite3.connect(cache_path)
+    table_create_sql = [
+        """
+        CREATE TABLE IF NOT EXISTS Airports (
+            ID INTEGER PRIMARY KEY,
+            ICAOCode TEXT,
+            IATACode TEXT,
+            FAALocID TEXT,
+            Name TEXT,
+            Hub TEXT,
+            Lat REAL,
+            Lon REAL
+        );
+        """,
+    ]
+    cur = con.cursor()
+    for statement in table_create_sql:
+        cur.execute(statement)
+    con.commit()
+    return con
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -146,7 +164,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite GeoPackage and cache files without asking"
+        help="Overwrite existing GeoPackage output file without asking"
     )
     args = parser.parse_args()
     airport_influence(
