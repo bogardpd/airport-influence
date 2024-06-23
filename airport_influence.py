@@ -26,7 +26,7 @@ def cache_airport_data(
     con: sqlite3.Connection,
     airport_data_path: Path,
     enplanement_data_path: Path,
-) -> pd.DataFrame:
+) -> None:
     """
     Merges FAA enplanement airport categories into airport data. 
     """
