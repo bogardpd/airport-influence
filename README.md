@@ -5,11 +5,12 @@ Data processing tools for mapping small U.S. airports that only connect through 
 
 ## Usage
 
-<code>airport_influence.py <em>airport_data_path</em> <em>enplanement_data_path</em> <em>output_gpkg_path</em></code>
+`airport_influence.py airport_data_path enplanement_data_path output_gpkg_path [--force]`
 
 - `airport_data_path`: OurAirports airports.csv file (see [Data Sources](#data-sources) below)
 - `enplanement_data_path`: FAA enplanement spreadsheet (see [Data Sources](#data-sources) below)
 - `output_gpkg_path`: Location to export a GeoPackage file (see [Output](#output) below). A cache file will also be created at the same location with the same name but a .sqlite3 extension.
+- `--force` Overwrite existing cache file and output GeoPackage file without asking
 
 ## Output
 
