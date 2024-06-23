@@ -4,6 +4,7 @@ which only connect to or through a single hub airport.
 """
 import argparse
 import pandas as pd
+import sqlite3
 from pathlib import Path
 
 
@@ -15,9 +16,11 @@ def airport_influence(
 ):
     cache_path = output_gpkg_path.parent / (output_gpkg_path.stem + ".sqlite3")
     if not force_overwrite:
-        check_existing_files([output_gpkg_path, cache_path])
+        check_existing_files([output_gpkg_path])
+    con = create_cache(cache_path)
     airports = merge_airport_data(airport_data_path, enplanement_data_path)
     print(airports)
+    con.close
 
 
 def check_existing_files(paths: list[Path]) -> None:
@@ -30,6 +33,38 @@ def check_existing_files(paths: list[Path]) -> None:
         if response.upper() != "Y":
             print("Exiting script without generating output.")
             exit()
+
+
+def create_cache(cache_path: Path) -> sqlite3.Connection:
+    if cache_path.exists():
+        response = input("Cache already exists. Clear cache? (y/N)")
+        if response.upper() == "Y":
+            cache_path.unlink()
+            print("Cache cleared.")
+        else:
+            con = sqlite3.connect(cache_path)
+            return con
+    
+    con = sqlite3.connect(cache_path)
+    table_create_sql = [
+        """
+        CREATE TABLE IF NOT EXISTS Airports (
+            ID INT PRIMARY KEY,
+            ICAOCode TEXT,
+            IATACode TEXT,
+            FAALocID TEXT,
+            Name TEXT,
+            Hub TEXT,
+            Lat REAL,
+            Lon REAL
+        );
+        """,
+    ]
+    cur = con.cursor()
+    for statement in table_create_sql:
+        cur.execute(statement)
+    con.commit()
+    return con
 
 
 def merge_airport_data(
